@@ -1,5 +1,6 @@
 import requests
 from django.shortcuts import render
+from decouple import config
 
 def home(request):
     weather_data = None
