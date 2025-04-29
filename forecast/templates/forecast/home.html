@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Forecast App</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         .card {
             border: none;
@@ -20,9 +22,43 @@
         .loading-spinner {
             display: none;
         }
+        #weatherAnimation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }  
+        .drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.4);
+            animation: fall 1s linear infinite;
+        }  
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }    
     </style>
 </head>
 <body>
+
+<!-- Animation background -->
+<div id="weatherAnimation"></div>
 
 <nav class="navbar navbar-light bg-light mb-4">
   <div class="container">
@@ -30,7 +66,7 @@
   </div>
 </nav>
 
-<div class="container">
+<div class="container" style="z-index: 1; position: relative;">
     <div class="row justify-content-center mb-4">
         <div class="col-md-6">
             <form method="post" id="weatherForm" class="d-flex">
@@ -73,18 +109,98 @@
                     </div>
                 {% endfor %}
             </div>
+
+            <!-- Graph -->
+            <div class="row justify-content-center my-5">
+                <div class="col-md-10">
+                    <canvas id="forecastChart" height="100"></canvas>
+                </div>
+            </div>
         {% endif %}
     {% endif %}
 </div>
 
+<!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const form = document.getElementById('weatherForm');
     const spinner = document.getElementById('loadingSpinner');
-
     form.addEventListener('submit', () => {
         spinner.style.display = 'block';
     });
+
+    // Animation for rain/snow
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if weather_data and not weather_data.error %}
+            const mainCondition = "{{ weather_data.list.0.weather.0.main|lower }}";
+            const animationDiv = document.getElementById('weatherAnimation');
+
+            if (mainCondition.includes("rain")) {
+                animationDiv.innerHTML = `<img src="https://i.ibb.co/XpNvLcz/rain.gif" style="width:100%;height:100%;object-fit:cover;opacity:0.3;">`;
+            } else if (mainCondition.includes("snow")) {
+                animationDiv.innerHTML = `<img src="https://i.ibb.co/sWRfRRm/snow.gif" style="width:100%;height:100%;object-fit:cover;opacity:0.3;">`;
+            } else {
+                animationDiv.innerHTML = '';
+            }
+        {% endif %}
+    });
+
+    function generateRain() {
+        const rainContainer = document.createElement("div");
+        rainContainer.className = "rain";
+        document.body.appendChild(rainContainer);
+
+        for (let i = 0; i < 100; i++) {
+            const drop = document.createElement("div");
+            drop.className = "drop";
+            drop.style.left = `${Math.random() * 100}%`;
+            drop.style.animationDelay = `${Math.random()}s`;
+            drop.style.height = `${Math.random() * 20 + 10}px`;
+            rainContainer.appendChild(drop);
+        }
+    }
+
+    // Call it directly for now (we’ll later conditionally trigger this)
+    generateRain();
+
+    // Chart.js temperature graph
+    {% if weather_data and not weather_data.error %}
+    const forecastLabels = [
+    {% for forecast in weather_data.list|slice:":5" %}
+        "{{ forecast.dt_txt }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+const forecastTemps = [
+    {% for forecast in weather_data.list|slice:":5" %}
+        {{ forecast.main.temp }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: forecastLabels,
+            datasets: [{
+                label: 'Temperature (°C)',
+                data: forecastTemps,
+                borderColor: '#007bff',
+                fill: true,
+                backgroundColor: 'rgba(0,123,255,0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    {% endif %}
 </script>
 
 </body>
