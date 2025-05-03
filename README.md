@@ -1,3 +1,10 @@
+![image](https://github.com/user-attachments/assets/7a7895ac-43c1-4641-a217-438913ff7480)
+
+![image](https://github.com/user-attachments/assets/10295430-3735-4e09-8069-bdce3c85c06e)
+
+
+
+
 # Weather Forecasting Web Application
 
 A simple weather forecasting web application built with Django. This app allows users to search for weather information for any city and view real-time weather data including temperature, humidity, and weather conditions.
